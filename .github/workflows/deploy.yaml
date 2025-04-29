@@ -14,36 +14,40 @@ jobs:
     steps:
       # 1. Клонирование репозитория
       - name: Checkout code
-        uses: actions/checkout@v4 # Используй актуальную версию
+        uses: actions/checkout@v4
 
-      # 2. Настройка Node.js (укажи версию, которую используешь локально)
+      # 2. Настройка Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22' # Укажи нужную версию Node.js
-          cache: 'npm' # Включить кэширование зависимостей npm
+          node-version: '22'
+          cache: 'npm'
 
       # 3. Установка зависимостей
       - name: Install dependencies
-        run: npm ci # Используй 'ci' для более строгой установки в CI/CD
+        run: npm ci
 
-      # 4. Сборка React-приложения
+      # 4. Сборка React-приложения <--- ШАГ СБОРКИ
       - name: Build application
         run: npm run build # Эта команда создаст папку 'dist'
 
+      # 4.1 Логирование после сборки <--- ОТДЕЛЬНЫЙ ШАГ ДЛЯ ЛОГА
+      - name: List files after build
+        run: |
+          echo "Current directory: $(pwd)"
+          echo "Listing files in workspace:"
+          ls -la ${{ github.workspace }}
+
       # 5. Деплой на VPS с помощью SSH и rsync
       - name: Deploy to VPS
-        uses: appleboy/ssh-action@master # Популярный action для SSH
+        uses: appleboy/ssh-action@v1.0.0 # Рекомендую указать версию, например v1.0.0
         with:
-          host: ${{ secrets.VPS_SSH_HOST }} # IP или домен твоего VPS
-          username: ${{ secrets.VPS_SSH_USER }} # Имя пользователя на VPS
-          key: ${{ secrets.VPS_SSH_KEY }} # Приватный SSH ключ
-          port: 22 # Порт SSH (обычно 22, но можно указать другой)
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
           script: |
-            # Копируем содержимое папки dist в целевую папку на сервере
-            # -a: архивный режим (сохраняет права, владельца и т.д.)
-            # -v: подробный вывод
-            # -z: сжатие при передаче
-            # --delete: удалить файлы на сервере, которых нет в источнике (в dist)
+            set -e # !!! Важно: Остановить скрипт при ошибке rsync !!!
+            echo "Deploying from ${{ github.workspace }}/dist/ to ${{ secrets.VPS_TARGET_PATH }}/"
             rsync -avz --delete ${{ github.workspace }}/dist/ ${{ secrets.VPS_TARGET_PATH }}/
-            echo "Deployment successful!"
+            echo "Rsync command finished." # Изменено для ясности
