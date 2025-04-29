@@ -45,5 +45,5 @@ jobs:
             # -v: подробный вывод
             # -z: сжатие при передаче
             # --delete: удалить файлы на сервере, которых нет в источнике (в dist)
-            rsync -avz --delete ./dist/ ${{ secrets.VPS_TARGET_PATH }}/
+            rsync -avz --delete ${{ github.workspace }}/dist/ ${{ secrets.VPS_TARGET_PATH }}/
             echo "Deployment successful!"
