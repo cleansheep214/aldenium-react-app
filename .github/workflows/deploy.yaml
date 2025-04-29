@@ -38,16 +38,19 @@ jobs:
           echo "Listing files in workspace:"
           ls -la ${{ github.workspace }}
 
-      # 5. Деплой на VPS с помощью SSH и rsync
+     # 5. Деплой на VPS с помощью SSH и rsync
       - name: Deploy to VPS
-        uses: appleboy/ssh-action@v1.0.0 # Рекомендую указать версию, например v1.0.0
+        uses: appleboy/ssh-action@v1.0.0 # Укажи версию
         with:
           host: ${{ secrets.VPS_SSH_HOST }}
           username: ${{ secrets.VPS_SSH_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: 22
           script: |
-            set -e # !!! Важно: Остановить скрипт при ошибке rsync !!!
+            set -e
+            echo "--- Listing files inside script block ---"
+            ls -la ${{ github.workspace }} # <--- ДОБАВЬ ЭТУ СТРОКУ ЗДЕСЬ
+            echo "--- End listing ---"
             echo "Deploying from ${{ github.workspace }}/dist/ to ${{ secrets.VPS_TARGET_PATH }}/"
             rsync -avz --delete ${{ github.workspace }}/dist/ ${{ secrets.VPS_TARGET_PATH }}/
-            echo "Rsync command finished." # Изменено для ясности
+            echo "Rsync command finished."
