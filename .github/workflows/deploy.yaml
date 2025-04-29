@@ -1,0 +1,49 @@
+name: Deploy Aldenium React App to VPS
+
+# Запускать workflow при пуше в ветку main
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    # Запускать на последней версии Ubuntu
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Клонирование репозитория
+      - name: Checkout code
+        uses: actions/checkout@v4 # Используй актуальную версию
+
+      # 2. Настройка Node.js (укажи версию, которую используешь локально)
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22' # Укажи нужную версию Node.js
+          cache: 'npm' # Включить кэширование зависимостей npm
+
+      # 3. Установка зависимостей
+      - name: Install dependencies
+        run: npm ci # Используй 'ci' для более строгой установки в CI/CD
+
+      # 4. Сборка React-приложения
+      - name: Build application
+        run: npm run build # Эта команда создаст папку 'dist'
+
+      # 5. Деплой на VPS с помощью SSH и rsync
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@master # Популярный action для SSH
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }} # IP или домен твоего VPS
+          username: ${{ secrets.VPS_SSH_USER }} # Имя пользователя на VPS
+          key: ${{ secrets.VPS_SSH_KEY }} # Приватный SSH ключ
+          port: 22 # Порт SSH (обычно 22, но можно указать другой)
+          script: |
+            # Копируем содержимое папки dist в целевую папку на сервере
+            # -a: архивный режим (сохраняет права, владельца и т.д.)
+            # -v: подробный вывод
+            # -z: сжатие при передаче
+            # --delete: удалить файлы на сервере, которых нет в источнике (в dist)
+            rsync -avz --delete ./dist/ ${{ secrets.VPS_TARGET_PATH }}/
+            echo "Deployment successful!"
